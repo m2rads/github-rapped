@@ -9,7 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@headlessui/tailwindcss": "^0.2.0",
     "@heroicons/react": "^2.0.18",
+    "@tailwindcss/forms": "^0.5.7",
     "clsx": "^2.0.0",
     "next": "14.0.3",
     "react": "^18",
