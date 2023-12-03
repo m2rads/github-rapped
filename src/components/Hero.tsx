@@ -1,4 +1,3 @@
-import { ChevronRightIcon } from '@heroicons/react/20/solid'
 import { GithubForm } from './GithubForm'
 
 export function Hero() {
