@@ -40,9 +40,9 @@ export function Hero() {
               <div className="mx-auto max-w-2xl gap-14 lg:mx-0 flex-col lg:flex-row flex lg:max-w-none lg:items-center">
                 <div className="relative w-full max-w-xl lg:shrink-0 z-10 xl:max-w-2xl">
                   <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-                  Unwrap Your Code's Story.
+                  Unwrap Your Code’s Story.
                   </h1>
-                  <p className="mt-7 text-lg leading-8 text-gray-400 sm:max-w-md lg:max-w-none">
+                  <p className="mt-7 text-lg leading-8 text-gray-300 sm:max-w-md lg:max-w-none">
                   Discover a Year of Creativity, Collaboration, and Commitments with GitHub Wrapped!
                   </p>
                   {/* this is wher to put the form */}
