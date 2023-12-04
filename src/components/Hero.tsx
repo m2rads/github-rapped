@@ -2,7 +2,7 @@ import { GithubForm } from './GithubForm'
 
 export function Hero() {
   return (
-    <div className="relative isolate overflow-hidden bg-slate-950">
+    <div className="relative isolate overflow-hidden h-screen bg-slate-950">
       <div
         className="absolute left-[calc(50%-4rem)] top-10 -z-10 transform-gpu blur-3xl sm:left-[calc(50%-18rem)] lg:left-48 lg:top-[calc(50%-30rem)] xl:left-[calc(50%-24rem)]"
         aria-hidden="true"
