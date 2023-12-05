@@ -6,36 +6,10 @@ export function GithubForm() {
     const [username, setUsername] = useState('');
     const router = useRouter();
 
-
-    // const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    //     event?.preventDefault();
-
-    //     try {
-    //         const response = await fetch('api/github-stats', {
-    //             method: 'POST',
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //             },
-    //             body: JSON.stringify({username}),
-    //         });
-    //         if (!response.ok) {
-    //             throw new Error('Network response was not ok'); 
-    //         }
-    //         const data = await response.json();
-    //         console.log('Github stats:', data);
-    //         // handle the data here
-    //     } catch (error) {
-    //         console.error('Errorr fetching Github stats:', error)
-    //         // handle errors here
-    //     }
-
-    // }
-
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         router.push(`/github?username=${username}`);
     };
-
 
     return(
         <div className="mt-10">
