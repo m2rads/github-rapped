@@ -74,48 +74,58 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Octokit } from '@octokit/core';
 
 // Assuming the GitHub Personal Access Token is stored in an environment variable
-const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
+// const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
 
 export async function POST(req: NextRequest) {
   const { username } = await req.json();
 
-  if (typeof username !== 'string') {
-    return new NextResponse(JSON.stringify({ message: 'Username must be a string' }), {
-      status: 400,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  }
+  return new NextResponse(JSON.stringify({
+    username,
+  }), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  // if (typeof username !== 'string') {
+  //   return new NextResponse(JSON.stringify({ message: 'Username must be a string' }), {
+  //     status: 400,
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //   });
+  // }
 
   // Fetch GitHub data using the username
-  try {
-    // Example: Fetch user repositories
-    const reposResponse = await octokit.request('GET /users/{username}/repos', {
-      username,
-    });
+  // try {
+  //   // Example: Fetch user repositories
+  //   // const reposResponse = await octokit.request('GET /users/{username}/repos', {
+  //   //   username,
+  //   // });
 
-    // Process the data (e.g., repo analysis)
-    // ...
+  //   // Process the data (e.g., repo analysis)
+  //   // ...
+    
 
-    // Return the response
-    return new NextResponse(JSON.stringify({
-      username,
-      repo_count: reposResponse.data.length,
-      // other data
-    }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  } catch (error) {
-    console.error('Error accessing the GitHub API:', error);
-    return new NextResponse(JSON.stringify({ message: 'Internal Server Error' }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  }
+  //   // Return the response
+  //   // return new NextResponse(JSON.stringify({
+  //   //   username,
+  //   //   repo_count: reposResponse.data.length,
+  //   //   // other data
+  //   // }), {
+  //   //   status: 200,
+  //   //   headers: {
+  //   //     'Content-Type': 'application/json',
+  //   //   },
+  //   // });
+  // } catch (error) {
+  //   console.error('Error accessing the GitHub API:', error);
+  //   return new NextResponse(JSON.stringify({ message: 'Internal Server Error' }), {
+  //     status: 500,
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //   });
+  // }
 }
