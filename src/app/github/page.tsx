@@ -8,7 +8,6 @@ interface GitHubStats {
   isActive: boolean;
 }
 
-
 export default function Page() {
   const [data, setData] = useState<GitHubStats | null>(null);
   const searchParams = useSearchParams();
