@@ -2,8 +2,15 @@
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react";
 
+interface GitHubStats {
+  totalJanuaryCommits: number;
+  threshold: number;
+  isActive: boolean;
+}
+
+
 export default function Page() {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<GitHubStats | null>(null);
   const searchParams = useSearchParams();
   const username = searchParams.get("username")
   
@@ -36,8 +43,13 @@ export default function Page() {
 
   return(
     <div>
-      <p>hello</p>
-      {JSON.stringify(data, null, 2)}
+      {data && (
+        <>
+          <p>Total January Commits: {data.totalJanuaryCommits}</p>
+          <p>Threshold for Active Start: {data.threshold}</p>
+          <p>Active Start to the Year: {data.isActive ? 'Yes' : 'No'}</p>
+        </>
+      )}
     </div>
   )
 }
