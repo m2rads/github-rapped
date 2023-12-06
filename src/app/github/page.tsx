@@ -6,6 +6,7 @@ interface GitHubStats {
   totalJanuaryCommits: number;
   threshold: number;
   isActive: boolean;
+  encouragingMessage: string;
 }
 
 export default function Page() {
@@ -46,7 +47,7 @@ export default function Page() {
         <>
           <p>Total January Commits: {data.totalJanuaryCommits}</p>
           <p>Threshold for Active Start: {data.threshold}</p>
-          <p>Active Start to the Year: {data.isActive ? 'Yes' : 'No'}</p>
+          <p>Active Start to the Year: {data.isActive ? "true" : data.encouragingMessage}</p>
         </>
       )}
     </div>
