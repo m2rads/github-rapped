@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Octokit } from '@octokit/core';
 
+// some encouraging messages with added humor
+const messages = [
+  "Started the year on 'sleep mode', but then you hit 'Ctrl + Alt + Commit' – now you're on a coding spree!",
+  "Started the year on 'Hello, World!' but soon went full 'git commit -m 'Unleash the Code!'' mode. That's some serious version control magic!",
+  "You began the year on 'debug mode', but then switched to 'release mode' with style. Keep on compiling those wins!",
+  "Early in the year: coffee loading... ☕ Later: code compiling like a pro. That's an impressive runtime upgrade!",
+  "January's commits were like searching for a semicolon; by mid-year, you're coding like it's a hackathon finale. Epic comeback!",
+  "Started with 'Ctrl+C', evolved to 'Ctrl+V', now you're all about 'Ctrl+S'. Saving the day, one commit at a time!",
+  "First few months: coding at tortoise speed. Now? You're in the express lane on the JavaScript highway. Zooming past those bugs!"
+];
+
 const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
 
 export async function POST(req: NextRequest) {
@@ -16,15 +27,27 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { januaryCommits, yearlyCommits } = await fetchCommitData(username);
+    const monthlyCommits = await fetchCommitData(username);
+    const yearlyCommits = monthlyCommits.reduce((a, b) => a + b, 0);
     const averageMonthlyCommits = yearlyCommits / 12; 
-    const threshold = averageMonthlyCommits / 2 // Adjust the threshold accordingly
-    const isActive = januaryCommits >= threshold;
+    const threshold = averageMonthlyCommits / 2; 
+    const isActiveStart = monthlyCommits[0] >= threshold;
+
+    let encouragingMessage = '';
+    if (!isActiveStart) {
+      // Check for months with increased activity
+      const activeMonths = monthlyCommits.map((commits, index) => commits > averageMonthlyCommits ? index : -1).filter(index => index > 0);
+      if (activeMonths.length > 0) {
+        // Construct a message based on active months
+        encouragingMessage = messages[Math.floor(Math.random() * messages.length)];
+      }
+    }
 
     return new NextResponse(JSON.stringify({
-      totalJanuaryCommits: januaryCommits,
+      totalJanuaryCommits: monthlyCommits[0],
       threshold: threshold,
-      isActive: isActive
+      isActiveStart: isActiveStart,
+      encouragingMessage: encouragingMessage
     }), {
       status: 200,
       headers: {
@@ -43,29 +66,45 @@ export async function POST(req: NextRequest) {
 }
 
 async function fetchCommitData(username: string) {
-  // calculates the start and end dates for january and the past year
   const currentYear = new Date().getFullYear();
-  const janStart = new Date(currentYear, 0, 1).toISOString();
-  const janEnd = new Date(currentYear, 1, 0).toISOString();
-  const yearStart = new Date(currentYear - 1, 0, 1).toISOString();
-  const yearEnd = new Date(currentYear, 0, 0).toISOString();
+  const startOfYear = new Date(currentYear, 0, 1).toISOString();
+  const endOfYear = new Date(currentYear + 1, 0, 0).toISOString();
 
-  // Fetch commits from January and the past yaer 
-  const januaryCommits = await getCommitsCount(username, janStart, janEnd);
-  const yearlyCommits = await getCommitsCount(username, yearStart, yearEnd);
+  const yearlyCommitsData = await getCommitsCount(username, startOfYear, endOfYear);
 
-  return { januaryCommits, yearlyCommits};
+  // Process yearly data to calculate commits per month
+  let monthlyCommits = processYearlyDataIntoMonthly(yearlyCommitsData, currentYear);
+
+  return monthlyCommits;
 }
 
-async function getCommitsCount(username: string, startDate: string, endDate: string) {
-  // fetch commit data from github using Octokit
-  // we need to handle pagination for accurate results
+async function getCommitsCount(username: string, startDate: string, endDate: string): Promise<any[]> {
+  // Fetch the commit data for the specified date range
+  // Handle pagination if necessary
+
   const commitsResponse = await octokit.request('GET /search/commits', {
     q: `author:${username} committer-date:${startDate}..${endDate}`,
     sort: 'committer-date',
     order: 'asc',
-    per_page: 100 //adjust as neccessary for pagination
-  })
+    per_page: 100 // Adjust for pagination
+  });
 
-  return commitsResponse.data.total_count;
+  return commitsResponse.data.items; // Access the items array
+}
+
+
+function processYearlyDataIntoMonthly(commitData: any[], year: number): number[] {
+  let monthlyCommits = new Array(12).fill(0);
+
+  commitData.forEach(commit => {
+    const commitDate = new Date(commit.commit.committer.date);
+    if (commitDate.getFullYear() === year) {
+      const month = commitDate.getMonth(); // 0-11
+      monthlyCommits[month]++;
+    }
+  });
+
+  console.log("monthlyCommits: ", monthlyCommits)
+
+  return monthlyCommits;
 }
