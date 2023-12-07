@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { graphql } from '@octokit/graphql';
 
 // some encouraging messages with added humor
-const messages = [
+const slowStartMessages = [
   "Started the year on 'sleep mode', but then you hit 'Ctrl + Alt + Commit' – now you're on a coding spree!",
   "Started the year on 'Hello, World!' but soon went full 'git commit -m 'Unleash the Code!'' mode. That's some serious version control magic!",
   "You began the year on 'debug mode', but then switched to 'release mode' with style. Keep on compiling those wins!",
@@ -11,6 +11,16 @@ const messages = [
   "Started with 'Ctrl+C', evolved to 'Ctrl+V', now you're all about 'Ctrl+S'. Saving the day, one commit at a time!",
   "First few months: coding at tortoise speed. Now? You're in the express lane on the JavaScript highway. Zooming past those bugs!"
 ];
+
+const goodStartMessages = [
+  "You hit the ground running like a well-optimized algorithm in January! Keep up that high-performance computing! 💻🚀",
+  "Started the year with more commits than coffee breaks? Java-nice day! ☕👨‍💻",
+  "Your early-year coding spree? Simply 'for' loop-tastic! Keep iterating through success! 🔄🌟",
+  "Bug-free January? Looks like you’ve already debugged 2023! 🐞🎉",
+  "Pushing more than a gym enthusiast, you've got your code repo in shape early! 🏋️‍♂️💾",
+  "You've been committing like it's a hackathon every day! Let's keep this code party going! 🎉👩‍💻",
+  "Array of hope! Your January contributions are like a perfectly indexed array, fast and efficient. Keep accessing those elements of success! 📈🤖"
+]
 
 // const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
 // Initialize the GraphQL client with authentication
@@ -45,8 +55,10 @@ export async function POST(req: NextRequest) {
       const activeMonths = monthlyCommits.map((commits, index) => commits > averageMonthlyCommits ? index : -1).filter(index => index > 0);
       if (activeMonths.length > 0) {
         // Construct a message based on active months
-        encouragingMessage = messages[Math.floor(Math.random() * messages.length)];
+        encouragingMessage = slowStartMessages[Math.floor(Math.random() * slowStartMessages.length)];
       }
+    } else {
+      encouragingMessage = goodStartMessages[Math.floor(Math.random() * goodStartMessages.length)];
     }
 
     return new NextResponse(JSON.stringify({
@@ -71,6 +83,70 @@ export async function POST(req: NextRequest) {
   }
 }
 
+async function fetchCommitData(username: string) {
+  const currentYear = new Date().getFullYear();
+  const startDate = new Date(currentYear, 0, 1).toISOString();
+  const endDate = new Date(currentYear + 1, 0, 0).toISOString();
+
+  // Define your GraphQL query here
+  const query = `
+        query($username:String!) { 
+          user(login: $username){
+            contributionsCollection {
+              contributionCalendar {
+                totalContributions
+                weeks {
+                  contributionDays {
+                    contributionCount
+                    date
+                  }
+                }
+              }
+            }
+          }
+        }
+  `;
+
+
+  // Fetch data
+  const result:any[] = await graphqlWithAuth(query, {
+    username: username,
+    startDate: startDate,
+    endDate: endDate
+  });
+  // console.log("GraphQL query result:", result);
+
+
+  // Process the result to calculate monthly commits
+  let monthlyCommits = processIntoMonthlyContributions(result);
+
+  return monthlyCommits;
+}
+
+function processIntoMonthlyContributions(data: any): number[] {
+  const monthlyContributions = new Array(12).fill(0);
+
+  data.user.contributionsCollection.contributionCalendar.weeks.forEach(week => {
+    week.contributionDays.forEach(day => {
+      const date = new Date(day.date);
+      const month = date.getMonth(); // 0-11
+      monthlyContributions[month] += day.contributionCount;
+    });
+  });
+
+  console.log("let's see monthly contributions: ", monthlyContributions)
+
+  return monthlyContributions;
+}
+
+
+// const result = await graphqlWithAuth(yourGraphQLQuery, {
+//   username: "yourUsername"
+// });
+
+// const monthlyContributions = processIntoMonthlyContributions(result);
+
+// github restful api implementation
 // async function fetchCommitData(username: string) {
 //   const currentYear = new Date().getFullYear();
 //   const startOfYear = new Date(currentYear, 0, 1).toISOString();
@@ -97,61 +173,3 @@ export async function POST(req: NextRequest) {
 
 //   return commitsResponse.data.items; // Access the items array
 // }
-
-async function fetchCommitData(username: string) {
-  const currentYear = new Date().getFullYear();
-  const startDate = new Date(currentYear, 0, 1).toISOString();
-  const endDate = new Date(currentYear + 1, 0, 0).toISOString();
-
-  // Define your GraphQL query here
-  const query = `
-    query getCommits($username: String!, $startDate: DateTime!, $endDate: DateTime!) {
-      user(login: $username) {
-        contributionsCollection(from: $startDate, to: $endDate) {
-          commitContributionsByRepository {
-            repository {
-              name
-            }
-            contributions(first: 100, orderBy: {field: OCCURRED_AT, direction: DESC}) {
-              nodes {
-                occurredAt
-              }
-            }
-          }
-        }
-      }
-    }
-  `;
-
-
-  // Fetch data
-  const result:any[] = await graphqlWithAuth(query, {
-    username: username,
-    startDate: startDate,
-    endDate: endDate
-  });
-  console.log("GraphQL query result:", result);
-
-
-  // Process the result to calculate monthly commits
-  let monthlyCommits = processYearlyDataIntoMonthly(result, currentYear);
-
-  return monthlyCommits;
-}
-
-function processYearlyDataIntoMonthly(commitData: any[], year: number): number[] {
-  let monthlyCommits = new Array(12).fill(0);
-  console.log("this is the raw results: ", commitData)
-
-  commitData.forEach(commit => {
-    const commitDate = new Date(commit.commit.committer.date);
-    if (commitDate.getFullYear() === year) {
-      const month = commitDate.getMonth(); // 0-11
-      monthlyCommits[month]++;
-    }
-  });
-
-  console.log("monthlyCommits: ", monthlyCommits)
-
-  return monthlyCommits;
-}
