@@ -22,6 +22,23 @@ const goodStartMessages = [
   "Array of hope! Your January contributions are like a perfectly indexed array, fast and efficient. Keep accessing those elements of success! 📈🤖"
 ]
 
+interface GraphQLResponse {
+  user: {
+    contributionsCollection: {
+      contributionCalendar: {
+        totalContributions: number;
+        weeks: Array<{
+          contributionDays: Array<{
+            contributionCount: number;
+            date: string;
+          }>;
+        }>;
+      };
+    };
+  };
+}
+
+
 // const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
 // Initialize the GraphQL client with authentication
 const graphqlWithAuth = graphql.defaults({
@@ -109,11 +126,9 @@ async function fetchCommitData(username: string) {
 
 
   // Fetch data
-  const result:any[] = await graphqlWithAuth(query, {
-    username: username,
-    startDate: startDate,
-    endDate: endDate
-  });
+  const result = await graphqlWithAuth(query, {
+    username: username
+  }) as GraphQLResponse;
   // console.log("GraphQL query result:", result);
 
 
@@ -123,7 +138,7 @@ async function fetchCommitData(username: string) {
   return monthlyCommits;
 }
 
-function processIntoMonthlyContributions(data: any): number[] {
+function processIntoMonthlyContributions(data: GraphQLResponse): number[] {
   const monthlyContributions = new Array(12).fill(0);
 
   data.user.contributionsCollection.contributionCalendar.weeks.forEach(week => {
