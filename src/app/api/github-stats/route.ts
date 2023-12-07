@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Octokit } from '@octokit/core';
+import { graphql } from '@octokit/graphql';
 
 // some encouraging messages with added humor
 const messages = [
@@ -12,7 +12,13 @@ const messages = [
   "First few months: coding at tortoise speed. Now? You're in the express lane on the JavaScript highway. Zooming past those bugs!"
 ];
 
-const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
+// const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
+// Initialize the GraphQL client with authentication
+const graphqlWithAuth = graphql.defaults({
+  headers: {
+    authorization: `token ${process.env.GITHUB_PERSONAL_ACCESS_TOKEN}`,
+  },
+});
 
 export async function POST(req: NextRequest) {
   const { username } = await req.json();
@@ -65,36 +71,77 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// async function fetchCommitData(username: string) {
+//   const currentYear = new Date().getFullYear();
+//   const startOfYear = new Date(currentYear, 0, 1).toISOString();
+//   const endOfYear = new Date(currentYear + 1, 0, 0).toISOString();
+
+//   const yearlyCommitsData = await getCommitsCount(username, startOfYear, endOfYear);
+
+//   // Process yearly data to calculate commits per month
+//   let monthlyCommits = processYearlyDataIntoMonthly(yearlyCommitsData, currentYear);
+
+//   return monthlyCommits;
+// }
+
+// async function getCommitsCount(username: string, startDate: string, endDate: string): Promise<any[]> {
+//   // Fetch the commit data for the specified date range
+//   // Handle pagination if necessary
+
+//   const commitsResponse = await octokit.request('GET /search/commits', {
+//     q: `author:${username} committer-date:${startDate}..${endDate}`,
+//     sort: 'committer-date',
+//     order: 'asc',
+//     per_page: 100 // Adjust for pagination
+//   });
+
+//   return commitsResponse.data.items; // Access the items array
+// }
+
 async function fetchCommitData(username: string) {
   const currentYear = new Date().getFullYear();
-  const startOfYear = new Date(currentYear, 0, 1).toISOString();
-  const endOfYear = new Date(currentYear + 1, 0, 0).toISOString();
+  const startDate = new Date(currentYear, 0, 1).toISOString();
+  const endDate = new Date(currentYear + 1, 0, 0).toISOString();
 
-  const yearlyCommitsData = await getCommitsCount(username, startOfYear, endOfYear);
+  // Define your GraphQL query here
+  const query = `
+    query getCommits($username: String!, $startDate: DateTime!, $endDate: DateTime!) {
+      user(login: $username) {
+        contributionsCollection(from: $startDate, to: $endDate) {
+          commitContributionsByRepository {
+            repository {
+              name
+            }
+            contributions(first: 100, orderBy: {field: OCCURRED_AT, direction: DESC}) {
+              nodes {
+                occurredAt
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
 
-  // Process yearly data to calculate commits per month
-  let monthlyCommits = processYearlyDataIntoMonthly(yearlyCommitsData, currentYear);
+
+  // Fetch data
+  const result:any[] = await graphqlWithAuth(query, {
+    username: username,
+    startDate: startDate,
+    endDate: endDate
+  });
+  console.log("GraphQL query result:", result);
+
+
+  // Process the result to calculate monthly commits
+  let monthlyCommits = processYearlyDataIntoMonthly(result, currentYear);
 
   return monthlyCommits;
 }
 
-async function getCommitsCount(username: string, startDate: string, endDate: string): Promise<any[]> {
-  // Fetch the commit data for the specified date range
-  // Handle pagination if necessary
-
-  const commitsResponse = await octokit.request('GET /search/commits', {
-    q: `author:${username} committer-date:${startDate}..${endDate}`,
-    sort: 'committer-date',
-    order: 'asc',
-    per_page: 100 // Adjust for pagination
-  });
-
-  return commitsResponse.data.items; // Access the items array
-}
-
-
 function processYearlyDataIntoMonthly(commitData: any[], year: number): number[] {
   let monthlyCommits = new Array(12).fill(0);
+  console.log("this is the raw results: ", commitData)
 
   commitData.forEach(commit => {
     const commitDate = new Date(commit.commit.committer.date);
