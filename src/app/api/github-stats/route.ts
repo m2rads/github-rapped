@@ -47,6 +47,8 @@ const graphqlWithAuth = graphql.defaults({
   },
 });
 
+console.log("api token: ", process.env.GITHUB_PERSONAL_ACCESS_TOKEN)
+
 export async function POST(req: NextRequest) {
   const { username } = await req.json();
 
