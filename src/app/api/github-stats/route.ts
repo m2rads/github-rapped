@@ -22,21 +22,32 @@ const goodStartMessages = [
   "Array of hope! Your January contributions are like a perfectly indexed array, fast and efficient. Keep accessing those elements of success! 📈🤖"
 ]
 
-interface GraphQLResponse {
-  user: {
-    contributionsCollection: {
-      contributionCalendar: {
-        totalContributions: number;
-        weeks: Array<{
-          contributionDays: Array<{
-            contributionCount: number;
-            date: string;
-          }>;
-        }>;
-      };
-    };
-  };
+interface ContributionDay {
+  contributionCount: number;
+  date: string;
 }
+
+interface ContributionWeek {
+  contributionDays: ContributionDay[];
+}
+
+interface ContributionCalendar {
+  totalContributions: number;
+  weeks: ContributionWeek[];
+}
+
+interface ContributionsCollection {
+  contributionCalendar: ContributionCalendar;
+}
+
+interface GitHubUser {
+  contributionsCollection: ContributionsCollection;
+}
+
+interface GraphQLResponse {
+    user: GitHubUser;
+}
+
 
 
 // const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
@@ -141,6 +152,8 @@ async function fetchCommitData(username: string) {
 function processIntoMonthlyContributions(data: GraphQLResponse): number[] {
   const monthlyContributions = new Array(12).fill(0);
 
+  console.log("total contribution: ", data.user.contributionsCollection.contributionCalendar.totalContributions)
+
   data.user.contributionsCollection.contributionCalendar.weeks.forEach(week => {
     week.contributionDays.forEach(day => {
       const date = new Date(day.date);
@@ -152,6 +165,23 @@ function processIntoMonthlyContributions(data: GraphQLResponse): number[] {
   console.log("let's see monthly contributions: ", monthlyContributions)
 
   return monthlyContributions;
+}
+
+function countNightTimeContributions(weeksData: ContributionCalendar["weeks"]): number {
+  let nightTimeContributions = 0;
+  weeksData.forEach(week => {
+    week.contributionDays.forEach(day => {
+      const contributionDate = new Date(day.date);
+      const hour = contributionDate.getUTCHours();
+
+      // Assuming night time is between 20:00 (8 PM) and 4:00 (4 AM) UTC
+      if (hour >= 20 || hour < 4) {
+        nightTimeContributions += day.contributionCount;
+      }
+    });
+  });
+
+  return nightTimeContributions;
 }
 
 
