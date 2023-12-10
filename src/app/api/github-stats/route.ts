@@ -22,6 +22,16 @@ const goodStartMessages = [
   'Array of hope! Your January contributions are like a perfectly indexed array, fast and efficient. Keep accessing those elements of success! 📈🤖',
 ];
 
+const codingAtNightMessages = [
+  "You're the superhero of the dark mode, turning night into a code-filled delight! Keep lighting up the IDE! 🌙⌨️✨",
+  "While the world sleeps, you merge and commit. The night is your domain, the moon your pair programming partner! 🌕👩‍💻",
+  "Owls hoot, bats fly, and you... code? Night is your canvas, and every line of code is a star in your sky! 🦉🌌",
+  "You code as if the night has a deadline, and sunrise is the client. Shine on, you nocturnal developer! 🌃💻",
+  "Forget counting sheep, you count loops and functions. Your code dreams are the stuff of legends! 🐑🔄",
+  "Pull requests by day, push commits by night. You're the guardian of the repository, the keeper of the code! 🛡️🌟",
+  "Coding at night? That's when the real magic happens, and the bugs fear to tread. You're the wizard of the witching hour! 🧙‍♂️🔮"
+]
+
 interface ContributionDay {
   contributionCount: number;
   date: string;
@@ -72,12 +82,19 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const monthlyCommits = await fetchCommitData(username);
+    const result = await fetchCommitData(username);
+
+    let monthlyCommits = processIntoMonthlyContributions(result);
     const yearlyCommits = monthlyCommits.reduce((a, b) => a + b, 0);
     const averageMonthlyCommits = yearlyCommits / 12;
     const threshold = averageMonthlyCommits / 2;
     const isActiveStart = monthlyCommits[0] >= threshold;
 
+    let weeks = result.user.contributionsCollection.contributionCalendar.weeks
+    let nightTimeContributions = countNightTimeContributions(weeks)
+
+
+    let codingAtNightMessage = codingAtNightMessages[Math.floor(Math.random() * goodStartMessages.length)];
     let encouragingMessage = '';
     if (!isActiveStart) {
       // Check for months with increased activity
@@ -149,7 +166,7 @@ async function fetchCommitData(username: string) {
   `;
 
   // Fetch data
-  const result = (await graphqlWithAuth(query, {
+const result = (await graphqlWithAuth(query, {
     username: username,
   })) as GraphQLResponse;
   // console.log("GraphQL query result:", result);
@@ -158,7 +175,6 @@ async function fetchCommitData(username: string) {
   let monthlyCommits = processIntoMonthlyContributions(result);
 
   return monthlyCommits;
-}
 
 function processIntoMonthlyContributions(data: GraphQLResponse): number[] {
   const monthlyContributions = new Array(12).fill(0);
@@ -190,6 +206,7 @@ function countNightTimeContributions(
   weeksData.forEach((week) => {
     week.contributionDays.forEach((day) => {
       const contributionDate = new Date(day.date);
+      console.log("date:", day);
       const hour = contributionDate.getUTCHours();
 
       // Assuming night time is between 20:00 (8 PM) and 4:00 (4 AM) UTC

@@ -7,6 +7,8 @@ interface GitHubStats {
   threshold: number;
   isActive: boolean;
   encouragingMessage: string;
+  codingAtNightMessage: string;
+  nightTimeContributions: number;
 }
 
 export default function Page() {
