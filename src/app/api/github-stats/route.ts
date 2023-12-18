@@ -1,46 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { graphql } from '@octokit/graphql';
+import { ContributionCalendar, GraphQLResponse } from './types' 
+import { slowStartMessages, goodStartMessages, codingAtNightMessages } from './messages'
 
-// some encouraging messages with added humor
-const slowStartMessages = [
-  "Started the year on 'sleep mode', but then you hit 'Ctrl + Alt + Commit' – now you're on a coding spree!",
-  "Started the year on 'Hello, World!' but soon went full 'git commit -m 'Unleash the Code!'' mode. That's some serious version control magic!",
-  "You began the year on 'debug mode', but then switched to 'release mode' with style. Keep on compiling those wins!",
-  "Early in the year: coffee loading... ☕ Later: code compiling like a pro. That's an impressive runtime upgrade!",
-  "January's commits were like searching for a semicolon; by mid-year, you're coding like it's a hackathon finale. Epic comeback!",
-  "Started with 'Ctrl+C', evolved to 'Ctrl+V', now you're all about 'Ctrl+S'. Saving the day, one commit at a time!",
-  "First few months: coding at tortoise speed. Now? You're in the express lane on the JavaScript highway. Zooming past those bugs!"
-];
-
-const goodStartMessages = [
-  "You hit the ground running like a well-optimized algorithm in January! Keep up that high-performance computing! 💻🚀",
-  "Started the year with more commits than coffee breaks? Java-nice day! ☕👨‍💻",
-  "Your early-year coding spree? Simply 'for' loop-tastic! Keep iterating through success! 🔄🌟",
-  "Bug-free January? Looks like you’ve already debugged 2023! 🐞🎉",
-  "Pushing more than a gym enthusiast, you've got your code repo in shape early! 🏋️‍♂️💾",
-  "You've been committing like it's a hackathon every day! Let's keep this code party going! 🎉👩‍💻",
-  "Array of hope! Your January contributions are like a perfectly indexed array, fast and efficient. Keep accessing those elements of success! 📈🤖"
-]
-
-interface GraphQLResponse {
-  user: {
-    contributionsCollection: {
-      contributionCalendar: {
-        totalContributions: number;
-        weeks: Array<{
-          contributionDays: Array<{
-            contributionCount: number;
-            date: string;
-          }>;
-        }>;
-      };
-    };
-  };
-}
-
-
-// const octokit = new Octokit({ auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN });
-// Initialize the GraphQL client with authentication
 const graphqlWithAuth = graphql.defaults({
   headers: {
     authorization: `token ${process.env.GITHUB_PERSONAL_ACCESS_TOKEN}`,
@@ -60,12 +22,19 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const monthlyCommits = await fetchCommitData(username);
+    const result = await fetchCommitData(username);
+
+    let monthlyCommits = processIntoMonthlyContributions(result);
     const yearlyCommits = monthlyCommits.reduce((a, b) => a + b, 0);
     const averageMonthlyCommits = yearlyCommits / 12; 
     const threshold = averageMonthlyCommits / 2; 
     const isActiveStart = monthlyCommits[0] >= threshold;
 
+    let weeks = result.user.contributionsCollection.contributionCalendar.weeks
+    let nightTimeContributions = countNightTimeContributions(weeks)
+
+
+    let codingAtNightMessage = codingAtNightMessages[Math.floor(Math.random() * goodStartMessages.length)];
     let encouragingMessage = '';
     if (!isActiveStart) {
       // Check for months with increased activity
@@ -82,7 +51,9 @@ export async function POST(req: NextRequest) {
       totalJanuaryCommits: monthlyCommits[0],
       threshold: threshold,
       isActiveStart: isActiveStart,
-      encouragingMessage: encouragingMessage
+      encouragingMessage: encouragingMessage,
+      nightTimeContributions: nightTimeContributions,
+      codingAtNightMessage: codingAtNightMessage
     }), {
       status: 200,
       headers: {
@@ -129,17 +100,15 @@ async function fetchCommitData(username: string) {
   const result = await graphqlWithAuth(query, {
     username: username
   }) as GraphQLResponse;
-  // console.log("GraphQL query result:", result);
+  // console.log("GraphQL query result:", result.user.contributionsCollection.contributionCalendar.weeks.date);
 
-
-  // Process the result to calculate monthly commits
-  let monthlyCommits = processIntoMonthlyContributions(result);
-
-  return monthlyCommits;
+  return result;
 }
 
 function processIntoMonthlyContributions(data: GraphQLResponse): number[] {
   const monthlyContributions = new Array(12).fill(0);
+
+  console.log("total contribution: ", data.user.contributionsCollection.contributionCalendar.totalContributions)
 
   data.user.contributionsCollection.contributionCalendar.weeks.forEach(week => {
     week.contributionDays.forEach(day => {
@@ -154,37 +123,20 @@ function processIntoMonthlyContributions(data: GraphQLResponse): number[] {
   return monthlyContributions;
 }
 
+function countNightTimeContributions(weeksData: ContributionCalendar["weeks"]): number {
+  let nightTimeContributions = 0;
+  weeksData.forEach(week => {
+    week.contributionDays.forEach(day => {
+      const contributionDate = new Date(day.date);
+      console.log("date:", day);
+      const hour = contributionDate.getUTCHours();
 
-// const result = await graphqlWithAuth(yourGraphQLQuery, {
-//   username: "yourUsername"
-// });
+      // Assuming night time is between 20:00 (8 PM) and 4:00 (4 AM) UTC
+      if (hour >= 20 || hour < 4) {
+        nightTimeContributions += day.contributionCount;
+      }
+    });
+  });
 
-// const monthlyContributions = processIntoMonthlyContributions(result);
-
-// github restful api implementation
-// async function fetchCommitData(username: string) {
-//   const currentYear = new Date().getFullYear();
-//   const startOfYear = new Date(currentYear, 0, 1).toISOString();
-//   const endOfYear = new Date(currentYear + 1, 0, 0).toISOString();
-
-//   const yearlyCommitsData = await getCommitsCount(username, startOfYear, endOfYear);
-
-//   // Process yearly data to calculate commits per month
-//   let monthlyCommits = processYearlyDataIntoMonthly(yearlyCommitsData, currentYear);
-
-//   return monthlyCommits;
-// }
-
-// async function getCommitsCount(username: string, startDate: string, endDate: string): Promise<any[]> {
-//   // Fetch the commit data for the specified date range
-//   // Handle pagination if necessary
-
-//   const commitsResponse = await octokit.request('GET /search/commits', {
-//     q: `author:${username} committer-date:${startDate}..${endDate}`,
-//     sort: 'committer-date',
-//     order: 'asc',
-//     per_page: 100 // Adjust for pagination
-//   });
-
-//   return commitsResponse.data.items; // Access the items array
-// }
+  return nightTimeContributions;
+}

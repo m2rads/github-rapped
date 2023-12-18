@@ -15,7 +15,9 @@ export const GithubStatsPage: NextPage<GithubStatsPageProps> = ({ data }) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps<GithubStatsPageProps> = async (context) => {
+export const getServerSideProps: GetServerSideProps<
+  GithubStatsPageProps
+> = async (context) => {
   const username = context.query.username;
 
   // Ensure username is a string
@@ -24,7 +26,9 @@ export const getServerSideProps: GetServerSideProps<GithubStatsPageProps> = asyn
   }
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/github-stats?username=${username}`);
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/github-stats?username=${username}`
+    );
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
@@ -36,4 +40,3 @@ export const getServerSideProps: GetServerSideProps<GithubStatsPageProps> = asyn
     return { props: { data: null } };
   }
 };
-

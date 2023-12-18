@@ -7,6 +7,8 @@ interface GitHubStats {
   threshold: number;
   isActive: boolean;
   encouragingMessage: string;
+  codingAtNightMessage: string;
+  nightTimeContributions: number;
 }
 
 export default function Page() {
@@ -45,9 +47,15 @@ export default function Page() {
     <div>
       {data && (
         <>
-          <p>Total January Commits: {data.totalJanuaryCommits}</p>
-          <p>Threshold for Active Start: {data.threshold}</p>
-          <p>Active Start to the Year: {data.isActive ? "true" : data.encouragingMessage}</p>
+         <div className="firstSlide">
+            <p>Total January Commits: {data.totalJanuaryCommits}</p>
+            <p>Threshold for Active Start: {data.threshold}</p>
+            <p>Active Start to the Year: {data.isActive ? "true" : data.encouragingMessage}</p>
+         </div>
+         <div className="secondSlide">
+            <p>total nightly contribution: {data.nightTimeContributions}</p>
+            <p>coding at night message: {data.codingAtNightMessage}</p>
+         </div>
         </>
       )}
     </div>
